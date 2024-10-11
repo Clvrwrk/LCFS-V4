@@ -1,0 +1,107 @@
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  background-color: #0000FF;
+  color: white;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.content {
+  margin-left: 7.5%;
+  margin-right: 7.5%;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400px;
+  margin-bottom: 20px;
+}
+
+.results {
+  border: 2px solid purple;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+input, select, button {
+  margin: 5px;
+  padding: 5px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #0000FF;
+  color: white;
+}
+
+.results table {
+  font-size: 0.9em;
+}
+
+.two-column {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.column {
+  width: 48%;
+}
+
+#fuel-amount, #fuel-type {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.entities-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.entity-item {
+  display: contents;
+}
+
+.entity-item input[type="text"] {
+  width: 100%;
+}
+
+.percentage-input {
+  display: flex;
+  align-items: center;
+}
+
+.percentage-input input {
+  width: 60px;
+  margin-right: 5px;
+}
+
+.percentage-input span {
+  white-space: nowrap;
+}
+
+.table-container {
+  max-height: 400px;
+  overflow-y: auto;
+}

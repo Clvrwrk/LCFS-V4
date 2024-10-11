@@ -1,0 +1,229 @@
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import Papa from 'papaparse';
+import { Line, Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import './App.css';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.log('Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong. Please try refreshing the page.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
+const App = () => {
+  const [historicalData, setHistoricalData] = useState([]);
+  const [participatingEntities, setParticipatingEntities] = useState([
+    { name: 'Entity 1', percentage: 20 },
+    { name: 'Entity 2', percentage: 20 },
+    { name: 'Entity 3', percentage: 20 },
+    { name: 'Entity 4', percentage: 20 },
+    { name: 'Entity 5', percentage: 20 },
+  ]);
+  const [creditsGenerated, setCreditsGenerated] = useState(1000);
+  const [projectionYears, setProjectionYears] = useState(1);
+  const [file, setFile] = useState(null);
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleSubmit = () => {
+    if (file) {
+      Papa.parse(file, {
+        complete: (results) => {
+          const parsedData = results.data
+            .filter(row => row['Weekly Average Credit Price ($)'] !== '')
+            .map(row => ({
+              date: new Date(row['Week Of']),
+              price: parseFloat(row['Weekly Average Credit Price ($)'])
+            }));
+          setHistoricalData(parsedData);
+        },
+        header: true
+      });
+    }
+  };
+
+  const handleEntityChange = (index, field, value) => {
+    const updatedEntities = [...participatingEntities];
+    updatedEntities[index][field] = field === 'percentage' ? parseFloat(value) : value;
+    setParticipatingEntities(updatedEntities);
+  };
+
+  const totalPercentage = useMemo(() => {
+    return participatingEntities.reduce((sum, entity) => sum + entity.percentage, 0);
+  }, [participatingEntities]);
+
+  const calculateRevenue = useCallback(() => {
+    if (historicalData.length === 0) return [];
+
+    const currentPrice = historicalData[historicalData.length - 1].price;
+    const annualRevenue = currentPrice * creditsGenerated * 12;
+    const totalRevenue = annualRevenue * projectionYears;
+
+    return participatingEntities.map(entity => ({
+      name: entity.name,
+      revenue: (entity.percentage / 100) * totalRevenue
+    }));
+  }, [historicalData, creditsGenerated, projectionYears, participatingEntities]);
+
+  const revenueData = useMemo(() => calculateRevenue(), [calculateRevenue]);
+
+  const chartData = {
+    labels: historicalData.map(d => d.date.toLocaleDateString()),
+    datasets: [
+      {
+        label: 'Historical Data',
+        data: historicalData.map(d => d.price),
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'LCFS Credit Value',
+      },
+    },
+  };
+
+  const barChartData = {
+    labels: revenueData.map(d => d.name),
+    datasets: [
+      {
+        label: `${projectionYears} Year Revenue Projection`,
+        data: revenueData.map(d => d.revenue),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+      }
+    ]
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: `${projectionYears} Year Revenue Projection`,
+      },
+    },
+  };
+
+  return (
+    <ErrorBoundary>
+      <div className="App">
+        <div className="logo">
+          <img src="/logo.png" alt="Zero Emission Advisors" />
+        </div>
+        <h1>LCFS Revenue Share Calculator</h1>
+        <div className="content">
+          <div>
+            <h2>Upload Historical LCFS Credit Value CSV</h2>
+            <input type="file" onChange={handleFileChange} accept=".csv" />
+            <button onClick={handleSubmit}>Upload and Process</button>
+          </div>
+          
+          {historicalData.length > 0 && (
+            <div className="chart-container">
+              <Line data={chartData} options={chartOptions} />
+            </div>
+          )}
+          
+          <div>
+            <h2>Participating Entities</h2>
+            {participatingEntities.map((entity, index) => (
+              <div key={index}>
+                <input
+                  type="text"
+                  value={entity.name}
+                  onChange={(e) => handleEntityChange(index, 'name', e.target.value)}
+                />
+                <input
+                  type="number"
+                  value={entity.percentage}
+                  onChange={(e) => handleEntityChange(index, 'percentage', e.target.value)}
+                />
+                %
+              </div>
+            ))}
+            {totalPercentage !== 100 && (
+              <p style={{ color: 'red' }}>Total percentage must equal 100%. Current total: {totalPercentage}%</p>
+            )}
+          </div>
+
+          <div>
+            <h2>Credits Generated Monthly</h2>
+            <input
+              type="number"
+              value={creditsGenerated}
+              onChange={(e) => setCreditsGenerated(parseInt(e.target.value))}
+            />
+          </div>
+
+          <div>
+            <h2>Projection Years</h2>
+            <select value={projectionYears} onChange={(e) => setProjectionYears(parseInt(e.target.value))}>
+              <option value={1}>1 Year</option>
+              <option value={5}>5 Years</option>
+              <option value={10}>10 Years</option>
+            </select>
+          </div>
+
+          <div className="results">
+            <h2>{projectionYears} Year Revenue Projection</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Entity</th>
+                  <th>Projected Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {revenueData.map((result, index) => (
+                  <tr key={index}>
+                    <td>{result.name}</td>
+                    <td>${result.revenue.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="chart-container">
+            <Bar data={barChartData} options={barChartOptions} />
+          </div>
+        </div>
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export default App;
